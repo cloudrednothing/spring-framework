@@ -142,6 +142,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	}
 
 	/**
+	 * 创建类路径下的bean定义扫描器
 	 * Create a new {@code ClassPathBeanDefinitionScanner} for the given bean factory and
 	 * using the given {@link Environment} when evaluating bean definition profile metadata.
 	 * @param registry the {@code BeanFactory} to load bean definitions into, in the form
@@ -162,10 +163,14 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		this.registry = registry;
 
+		//使用默认的扫描规则
 		if (useDefaultFilters) {
+			//默认的扫描规则
 			registerDefaultFilters();
 		}
+		//设置环境变量
 		setEnvironment(environment);
+		//设置资源加载器
 		setResourceLoader(resourceLoader);
 	}
 
@@ -270,24 +275,35 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
+		//创建一个Bean定义 holder的 set
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
+		//循环扫描路径
 		for (String basePackage : basePackages) {
+			//找到候选的组件集
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+			//循环候选组件集合
 			for (BeanDefinition candidate : candidates) {
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
 				candidate.setScope(scopeMetadata.getScopeName());
+				//生成bean的名称
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
+				//判断是不是抽象的bean定义
 				if (candidate instanceof AbstractBeanDefinition) {
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
+				//是否为注解的bean定义
 				if (candidate instanceof AnnotatedBeanDefinition) {
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
+				//检查当前的和存主的bean定义是否有冲突
 				if (checkCandidate(beanName, candidate)) {
+					//把候选的组件封装成BeanDefinitionHolder
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+					//加入到bean定义的集合中
 					beanDefinitions.add(definitionHolder);
+					//注册当前的bean定义信息
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}
